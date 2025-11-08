@@ -18,9 +18,8 @@
   }
 
   /**
-   * Parses a string value into a number, handling various European number formats.
-   * It can process numbers with comma decimals ("123,45") and thousands separators
-   * like dots or spaces ("1.234,56").
+   * Parses a string value into a number, handling European number formats and units.
+   * It can process numbers with comma decimals ("123,45") and removes units like "lb" or "s".
    * @param {*} val The value to convert.
    * @returns {number|null} The parsed number, or null if conversion is not possible.
    */
@@ -28,27 +27,23 @@
     if (val == null) return null;
     if (typeof val === 'number' && isFinite(val)) return val;
 
-    let s = String(val).trim();
+    // Remove units like "lb", "s" and other non-numeric characters except comma/dot.
+    let s = String(val).replace(/[^0-9.,]/g, '').trim();
     if (s === '') return null;
 
-    // Standardize the number string by removing thousands separators and replacing a decimal comma with a dot.
-    s = s.replace(/\s/g, ''); // Remove spaces
-    if (s.indexOf(',') > -1 && s.indexOf('.') > -1) {
-      // Handles "1.234,56" -> "1234.56"
-      s = s.replace(/\./g, '').replace(',', '.');
-    } else {
-      // Handles "123,45" -> "123.45"
-      s = s.replace(',', '.');
-    }
+    // Standardize the number string by replacing a decimal comma with a dot.
+    s = s.replace(',', '.');
 
     const n = parseFloat(s);
     return isNaN(n) ? null : n;
   }
 
   function parseCSV(csvFile) {
+    // We change the strategy here. We will not use the `header: true` option.
+    // Instead, we'll parse the whole file as an array of arrays and process headers manually.
+    // This gives us full control over headers, especially the empty ones.
     const config = {
-      header: true,
-      // We do our own number parsing to handle locale-specific formats (e.g., comma as decimal).
+      header: false, // This is the most important change!
       dynamicTyping: false,
       skipEmptyLines: true,
       delimiter: ";",
@@ -58,33 +53,40 @@
           alert("There was an error parsing the CSV file. Please check the console for details.");
           return;
         }
-        transform(results);
+        // Manually transform the data now that we have full control.
+        transform(results.data);
       }
     };
     Papa.parse(csvFile, config);
   }
 
-  function transform(parsed) {
-    if (!parsed.data || parsed.data.length === 0) {
-      alert("CSV file is empty or invalid.");
+  function transform(data) {
+    if (!data || data.length < 2) { // We need at least a header row and one data row.
+      alert("CSV file is empty or has no data.");
       return;
     }
 
-    const firstRow = parsed.data[0];
-    const dateColumnName = parsed.meta.fields[0];
+    // The first row is our headers, the rest is the data.
+    const headers = data[0];
+    const rows = data.slice(1);
+    const dateColumnName = headers[0];
 
-    // From the headers, create a list of machine names to plot, ignoring the date column and any columns related to time (sec).
-    const columnHeaders = Object.keys(firstRow)
-        .slice(1) // Ignore the first column (date)
-        .filter(key => key.toLowerCase().indexOf('sec') === -1 && key.trim() !== '');
-
-    const rows = parsed.data;
+    // From the headers, create a list of machine names.
+    // We find the index of each machine name column.
+    const machineColumns = [];
+    headers.forEach((header, index) => {
+      // A machine column is one that has a non-empty header and is not the 'Datum' column.
+      if (header && header.trim() !== '' && index > 0) {
+        machineColumns.push({ name: header, index: index });
+      }
+    });
 
     // Transform the row-based CSV data into a series of lines for the chart.
-    const lines = columnHeaders.map(function(columnName) {
+    const lines = machineColumns.map(function(machine) {
       const values = rows.map(function(row) {
-        const dateString = row[dateColumnName];
-        const y = toNumberOrNull(row[columnName]);
+        const dateString = row[0]; // Date is always in the first column.
+        // The value is in the column identified by the machine's index.
+        const y = toNumberOrNull(row[machine.index]);
 
         // Only create a data point if both date and a valid weight exist.
         if (dateString && typeof y === 'number') {
@@ -94,7 +96,7 @@
       })
           .filter(point => point !== null); // Remove any empty points
 
-      return { key: columnName, values: values };
+      return { key: machine.name, values: values };
     }).filter(line => line.values.length > 0); // Only keep lines that have data
 
     drawGraph(lines);
