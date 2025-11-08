@@ -3,7 +3,7 @@
 ## Improvement ideas
 
 - [x] make sure it works with current csv data structure
-- [ ] add "sec" to charts
+- [x] add "sec" to charts
 - [ ] add new chart line, which shows global curve
 - [ ] make "lbs" on Y axe visible (is outside the box now)
 - [ ] group by type of machines (A, B...), make sure groups can be shown separately in the chart

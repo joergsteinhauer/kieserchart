@@ -39,11 +39,10 @@
   }
 
   function parseCSV(csvFile) {
-    // We change the strategy here. We will not use the `header: true` option.
-    // Instead, we'll parse the whole file as an array of arrays and process headers manually.
+    // We will parse the whole file as an array of arrays and process headers manually.
     // This gives us full control over headers, especially the empty ones.
     const config = {
-      header: false, // This is the most important change!
+      header: false,
       dynamicTyping: false,
       skipEmptyLines: true,
       delimiter: ";",
@@ -53,7 +52,6 @@
           alert("There was an error parsing the CSV file. Please check the console for details.");
           return;
         }
-        // Manually transform the data now that we have full control.
         transform(results.data);
       }
     };
@@ -66,38 +64,60 @@
       return;
     }
 
-    // The first row is our headers, the rest is the data.
     const headers = data[0];
     const rows = data.slice(1);
-    const dateColumnName = headers[0];
 
-    // From the headers, create a list of machine names.
-    // We find the index of each machine name column.
     const machineColumns = [];
-    headers.forEach((header, index) => {
-      // A machine column is one that has a non-empty header and is not the 'Datum' column.
-      if (header && header.trim() !== '' && index > 0) {
-        machineColumns.push({ name: header, index: index });
+
+    // Identify the primary machine columns.
+    // This logic now correctly handles both CSV formats.
+    for (let i = 1; i < headers.length; i++) {
+      const header = headers[i].trim();
+      if (header) {
+        // This is a primary machine column (e.g., "A3", "A3 lbs").
+        machineColumns.push({ name: header, index: i });
+
+        // If the next column has an empty header, it's a 'sec' column, so we skip it.
+        if (i + 1 < headers.length && !headers[i + 1].trim()) {
+          i++; // Increment i to skip the empty-headed 'sec' column.
+        }
+        // If the next column is explicitly named '... sec', the main loop will handle it.
       }
-    });
+    }
+
 
     // Transform the row-based CSV data into a series of lines for the chart.
-    const lines = machineColumns.map(function(machine) {
-      const values = rows.map(function(row) {
+    const lines = machineColumns.map(machine => {
+      // For each machine, find its corresponding 'sec' column.
+      const machineBaseName = machine.name.replace(/ lbs$/i, '').trim();
+
+      // The 'sec' column is assumed to be immediately after the machine's primary column.
+      const secIndex = machine.index + 1;
+
+      const values = rows.map(row => {
         const dateString = row[0]; // Date is always in the first column.
-        // The value is in the column identified by the machine's index.
-        const y = toNumberOrNull(row[machine.index]);
+        const y = toNumberOrNull(row[machine.index]); // Weight value.
 
         // Only create a data point if both date and a valid weight exist.
         if (dateString && typeof y === 'number') {
-          return { x: dateString, y: y };
+          const point = { x: dateString, y: y };
+
+          // If a corresponding 'sec' column exists, add its value.
+          if (secIndex < headers.length) {
+            point.sec = toNumberOrNull(row[secIndex]);
+          } else {
+            point.sec = null; // No 'sec' column exists for this data point.
+          }
+          return point;
         }
         return null;
-      })
-          .filter(point => point !== null); // Remove any empty points
+      }).filter(point => point !== null); // Remove any empty points.
 
-      return { key: machine.name, values: values };
-    }).filter(line => line.values.length > 0); // Only keep lines that have data
+      return {
+        key: machineBaseName, // Use the clean base name for the legend.
+        values: values
+      };
+    }).filter(line => line.values.length > 0); // Only keep lines that have data.
 
     drawGraph(lines);
   }
@@ -116,6 +136,56 @@
             const m = moment(valueObj.x, dateFormat, true);
             return m.isValid() ? m.toDate() : null;
           });
+
+      // --- Tooltip Customization ---
+      // Use a content generator to create custom HTML for the tooltip.
+      chart.interactiveLayer.tooltip.contentGenerator(function(d) {
+        if (d === null) {
+          return '';
+        }
+        // Format the date for the tooltip header.
+        const date = d3.time.format('%d.%m.%Y')(new Date(d.value));
+        let table = `<table>
+                       <thead>
+                         <tr><th colspan="4">${date}</th></tr>
+                         <tr>
+                           <th colspan="2">Machine</th>
+                           <th class="value">LBS</th>
+                           <th class="value">SEC.</th>
+                         </tr>
+                       </thead>
+                       <tbody>`;
+
+        // Add a row for each data series (each machine).
+        d.series.forEach(function(elem) {
+          const secNumericValue = elem.data.sec;
+          const secDisplayValue = (secNumericValue !== null && typeof secNumericValue === 'number')
+              ? secNumericValue
+              : 'N/A';
+
+          let secCellClass = '';
+          if (secNumericValue !== null && typeof secNumericValue === 'number') {
+            if (secNumericValue < 120) {
+              secCellClass = 'sec-bad'; // Less than 120
+            } else if (secNumericValue < 150) {
+              secCellClass = 'sec-ok'; // 120 to 149
+            } else {
+              secCellClass = 'sec-good'; // 150 and over
+            }
+          }
+
+          table += `<tr>
+                      <td class="legend-color-guide"><div style="background-color: ${elem.color};"></div></td>
+                      <td class="key">${elem.key}</td>
+                      <td class="value">${d3.format(',.0f')(elem.value)}</td>
+                      <td class="value ${secCellClass}">${secDisplayValue}</td>
+                    </tr>`;
+        });
+
+        table += '</tbody></table>';
+        return table;
+      });
+      // --- End of Tooltip Customization ---
 
       chart.xScale(d3.time.scale());
       chart.xAxis
