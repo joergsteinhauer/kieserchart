@@ -3,11 +3,41 @@
 
   const dateFormat = "DD.MM.YYYY";
 
+  // --- START: New Color and State Management ---
+
+  // 1. Define base colors for each machine group.
+  // These can be easily customized.
+  const GROUP_COLORS = {
+    'A': 'hsl(205, 70%, 50%)', // Blue
+    'B': 'hsl(160, 70%, 45%)', // Teal/Green
+    'C': 'hsl(350, 75%, 55%)', // Red
+    'D': 'hsl(35, 85%, 50%)',  // Orange
+    'F': 'hsl(280, 60%, 60%)', // Purple
+    'G': 'hsl(50, 80%, 50%)',  // Yellow/Gold
+    'DEFAULT': 'hsl(0, 0%, 50%)' // Grey for ungrouped
+  };
+  const AVERAGE_COLOR = 'hsl(0, 0%, 10%)'; // Almost black for the Average line
+
+  // 2. Store chart data globally to allow re-sorting without re-parsing.
+  let chartData = [];
+  // --- END: New Color and State Management ---
+
+
   document.addEventListener('DOMContentLoaded', function() {
     const csvFileInput = document.getElementById('csv-file');
     if (csvFileInput) {
       csvFileInput.addEventListener('change', handleFileSelect);
     }
+
+    // --- START: Checkbox Event Listener ---
+    const groupCheckbox = document.getElementById('group-machines-checkbox');
+    if (groupCheckbox) {
+      groupCheckbox.addEventListener('change', () => {
+        // When the checkbox changes, re-draw the chart with the new sorting preference.
+        drawGraph(chartData, groupCheckbox.checked);
+      });
+    }
+    // --- END: Checkbox Event Listener ---
   });
 
   function handleFileSelect(evt) {
@@ -85,9 +115,8 @@
       }
     }
 
-
     // Transform the row-based CSV data into a series of lines for the chart.
-    const lines = machineColumns.map(machine => {
+    let lines = machineColumns.map(machine => {
       // For each machine, find its corresponding 'sec' column.
       const machineBaseName = machine.name.replace(/ lbs$/i, '').trim();
 
@@ -148,123 +177,149 @@
       const averageLine = {
         key: 'Average',
         values: averageValues,
-        isAverage: true, // Keep this for the tooltip and legend symbol
-        // This function is automatically called by NVD3 to add a custom class.
-        classes: function() {
-          return 'average-line-series';
-        }
+        isAverage: true,
+        color: AVERAGE_COLOR
       };
       // Add the average line to the beginning of the array
       lines.unshift(averageLine);
     }
 
-    drawGraph(lines);
+    // Store the fully processed data and draw the chart for the first time.
+    chartData = lines;
+    const isGrouped = document.getElementById('group-machines-checkbox')?.checked || false;
+    drawGraph(chartData, isGrouped);
   }
 
-  function drawGraph(valueLines) {
-    // Clear previous chart before drawing a new one.
+  /**
+   * Generates a color for a machine based on its group.
+   * @param {string} key The machine key (e.g., "A3").
+   * @param {Map<string, number>} groupCounts A map to track how many machines are in each group.
+   * @returns {string} An HSL color string.
+   */
+  function getColorForMachine(key, groupCounts) {
+    const group = key.charAt(0).toUpperCase();
+    const baseColor = GROUP_COLORS[group] || GROUP_COLORS['DEFAULT'];
+
+    const countInGroup = groupCounts.get(group) || 0;
+    groupCounts.set(group, countInGroup + 1);
+
+    // Parse the HSL color string (e.g., "hsl(205, 70%, 50%)")
+    const [hue, saturation, lightness] = baseColor.match(/\d+/g).map(Number);
+
+    // Don't modify the first color in a group
+    if (countInGroup === 0) {
+      return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    }
+
+    // For subsequent machines in the same group, slightly change lightness and saturation
+    // This creates visually related, but distinct, colors.
+    const lightnessShift = (countInGroup % 2 === 1 ? 1 : -1) * Math.ceil(countInGroup / 2) * 8;
+    const newLightness = Math.max(20, Math.min(85, lightness + lightnessShift)); // Clamp between 20% and 85%
+
+    return `hsl(${hue}, ${saturation}%, ${newLightness}%)`;
+  }
+
+
+  function drawGraph(sourceData, isGrouped) {
+    // Create a deep copy to avoid modifying the original data.
+    let valueLines = JSON.parse(JSON.stringify(sourceData));
+
+    // --- START: New Sorting Logic ---
+    const averageLine = valueLines.find(d => d.isAverage);
+    let machineLines = valueLines.filter(d => !d.isAverage);
+
+    if (isGrouped) {
+      // Sort by machine name (A1, A3, B1, B7...)
+      machineLines.sort((a, b) => a.key.localeCompare(b.key, 'en', { numeric: true }));
+    }
+    // If not grouped, we just use the original parsed order.
+
+    valueLines = [averageLine, ...machineLines].filter(Boolean); // Re-assemble the array
+    // --- END: New Sorting Logic ---
+
     d3.select('#chart svg').selectAll('*').remove();
 
     nv.addGraph(function() {
       const chart = nv.models.lineChart()
           .margin({ left: 50, right: 50, top: 50 })
           .useInteractiveGuideline(true)
-          .x(function(valueObj) {
-            // Use Moment.js for strict date parsing based on our specific format.
-            moment.locale('de');
-            const m = moment(valueObj.x, dateFormat, true);
-            return m.isValid() ? m.toDate() : null;
-          });
+          .x(d => moment(d.x, dateFormat, true).toDate());
 
-      // Tooltip Customization
-      // Use a content generator to create custom HTML for the tooltip.
+      // --- START: New Color Logic ---
+      const groupCounts = new Map(); // Track machine counts per group for color derivation
+      chart.color(d => {
+        if (d.isAverage) return d.color;
+        return getColorForMachine(d.key, groupCounts);
+      });
+      // --- END: New Color Logic ---
+
+      // Tooltip, Axis, and other configurations remain largely the same...
       chart.interactiveLayer.tooltip.contentGenerator(function(d) {
-        if (d === null) {
-          return '';
-        }
-        // Format the date for the tooltip header.
+        if (d === null) return '';
         const date = d3.time.format('%d.%m.%Y')(new Date(d.value));
-        let table = `<table>
-                       <thead>
-                         <tr><th colspan="4">${date}</th></tr>
-                         <tr>
-                           <th colspan="2">Machine</th>
-                           <th class="value">LBS</th>
-                           <th class="value">SEC.</th>
-                         </tr>
-                       </thead>
-                       <tbody>`;
-
-        // Add a row for each data series (each machine).
+        let table = `<table><thead><tr><th colspan="4">${date}</th></tr><tr><th colspan="2">Machine</th><th class="value">LBS</th><th class="value">SEC.</th></tr></thead><tbody>`;
         d.series.forEach(function(elem) {
-          // Handle the special "Average" line in the tooltip
           if (elem.data.isAverage) {
-            table += `<tr>
-                        <td class="legend-color-guide"><div style="background-color: ${elem.color};"></div></td>
-                        <td class="key">${elem.key}</td>
-                        <td class="value">${d3.format(',.1f')(elem.value)}</td>
-                        <td class="value"></td>
-                      </tr>`;
+            table += `<tr><td class="legend-color-guide"><div style="background-color: ${elem.color};"></div></td><td class="key">${elem.key}</td><td class="value">${d3.format(',.1f')(elem.value)}</td><td class="value"></td></tr>`;
           } else {
-            // Handle regular machine lines
             const secNumericValue = elem.data.sec;
-            const secDisplayValue = (secNumericValue !== null && typeof secNumericValue === 'number')
-                ? secNumericValue
-                : 'N/A';
-
+            const secDisplayValue = (secNumericValue !== null && typeof secNumericValue === 'number') ? secNumericValue : 'N/A';
             let secCellClass = '';
             if (secNumericValue !== null && typeof secNumericValue === 'number') {
-              if (secNumericValue < 120) {
-                secCellClass = 'sec-bad';
-              } else if (secNumericValue < 150) {
-                secCellClass = 'sec-ok';
-              } else {
-                secCellClass = 'sec-good';
-              }
+              if (secNumericValue < 120) secCellClass = 'sec-bad';
+              else if (secNumericValue < 150) secCellClass = 'sec-ok';
+              else secCellClass = 'sec-good';
             }
-
-            table += `<tr>
-                        <td class="legend-color-guide"><div style="background-color: ${elem.color};"></div></td>
-                        <td class="key">${elem.key}</td>
-                        <td class="value">${d3.format(',.0f')(elem.value)}</td>
-                        <td class="value ${secCellClass}">${secDisplayValue}</td>
-                      </tr>`;
+            table += `<tr><td class="legend-color-guide"><div style="background-color: ${elem.color};"></div></td><td class="key">${elem.key}</td><td class="value">${d3.format(',.0f')(elem.value)}</td><td class="value ${secCellClass}">${secDisplayValue}</td></tr>`;
           }
         });
-
         table += '</tbody></table>';
         return table;
       });
 
-      // Chart axes
       chart.xScale(d3.time.scale());
-      chart.xAxis
-          .axisLabel('Time')
-          .tickFormat(function(dateNumber) {
-            // Format the date for the x-axis ticks.
-            const date = new Date(dateNumber);
-            return d3.time.format('%d.%m.%y')(date);
-          });
+      chart.xAxis.axisLabel('Time').tickFormat(d => d3.time.format('%d.%m.%y')(new Date(d)));
+      chart.yAxis.axisLabel('Lbs').tickFormat(d3.format(',.0f'));
 
-      chart.yAxis
-          .axisLabel('Lbs')
-          .tickFormat(d3.format(',.0f'));
+      d3.select('#chart svg').datum(valueLines).transition().duration(500).call(chart);
 
-      d3.select('#chart svg')
-          .datum(valueLines)
-          .transition().duration(500)
-          .call(chart);
-
-      // Style the legend symbol
+      // --- START: The Guaranteed Styling Logic ---
+      // This runs every time the chart is rendered or updated.
       chart.dispatch.on('renderEnd', function() {
+        let averageSeriesIndex = -1;
+
+        // Find the current index of the "Average" series in the legend.
+        d3.selectAll('#chart .nv-legend .nv-series')
+            .each(function(d, i) {
+              if (d.isAverage) {
+                averageSeriesIndex = i;
+              }
+            });
+
+        // Clean up previous state.
+        d3.selectAll('#chart .nv-linesWrap .nv-series')
+            .classed('average-line-series', false);
+
+        // If the average series is visible, apply the class to the correct line.
+        if (averageSeriesIndex !== -1) {
+          d3.select('#chart .nv-linesWrap .nv-series-' + averageSeriesIndex)
+              .classed('average-line-series', true);
+        }
+
+        // Style the 'Average' legend symbol to be larger.
         d3.selectAll('#chart .nv-legend-symbol')
             .filter((d) => d.isAverage)
             .attr('r', 10);
+
+        // --- NEW ---
+        // Remove the stroke from ALL legend symbols for a cleaner look.
+        d3.selectAll('#chart .nv-legend-symbol')
+            .style('stroke-width', 0);
       });
+      // --- END: The Guaranteed Styling Logic ---
 
       nv.utils.windowResize(chart.update);
       return chart;
     });
   }
-
 })();
