@@ -119,6 +119,45 @@
       };
     }).filter(line => line.values.length > 0); // Only keep lines that have data.
 
+    // Calculate the average line
+    const dailyTotals = new Map();
+    lines.forEach(line => {
+      line.values.forEach(point => {
+        const { x: date, y: weight } = point;
+        if (!dailyTotals.has(date)) {
+          dailyTotals.set(date, { totalWeight: 0, count: 0 });
+        }
+        const current = dailyTotals.get(date);
+        current.totalWeight += weight;
+        current.count++;
+      });
+    });
+
+    const averageValues = [];
+    dailyTotals.forEach((value, date) => {
+      averageValues.push({
+        x: date,
+        y: value.totalWeight / value.count
+      });
+    });
+
+    // Sort the average values by date to ensure the line is drawn correctly
+    averageValues.sort((a, b) => moment(a.x, dateFormat).toDate() - moment(b.x, dateFormat).toDate());
+
+    if (averageValues.length > 0) {
+      const averageLine = {
+        key: 'Average',
+        values: averageValues,
+        isAverage: true, // Keep this for the tooltip and legend symbol
+        // This function is automatically called by NVD3 to add a custom class.
+        classes: function() {
+          return 'average-line-series';
+        }
+      };
+      // Add the average line to the beginning of the array
+      lines.unshift(averageLine);
+    }
+
     drawGraph(lines);
   }
 
@@ -137,7 +176,7 @@
             return m.isValid() ? m.toDate() : null;
           });
 
-      // --- Tooltip Customization ---
+      // Tooltip Customization
       // Use a content generator to create custom HTML for the tooltip.
       chart.interactiveLayer.tooltip.contentGenerator(function(d) {
         if (d === null) {
@@ -158,35 +197,46 @@
 
         // Add a row for each data series (each machine).
         d.series.forEach(function(elem) {
-          const secNumericValue = elem.data.sec;
-          const secDisplayValue = (secNumericValue !== null && typeof secNumericValue === 'number')
-              ? secNumericValue
-              : 'N/A';
+          // Handle the special "Average" line in the tooltip
+          if (elem.data.isAverage) {
+            table += `<tr>
+                        <td class="legend-color-guide"><div style="background-color: ${elem.color};"></div></td>
+                        <td class="key">${elem.key}</td>
+                        <td class="value">${d3.format(',.1f')(elem.value)}</td>
+                        <td class="value"></td>
+                      </tr>`;
+          } else {
+            // Handle regular machine lines
+            const secNumericValue = elem.data.sec;
+            const secDisplayValue = (secNumericValue !== null && typeof secNumericValue === 'number')
+                ? secNumericValue
+                : 'N/A';
 
-          let secCellClass = '';
-          if (secNumericValue !== null && typeof secNumericValue === 'number') {
-            if (secNumericValue < 120) {
-              secCellClass = 'sec-bad'; // Less than 120
-            } else if (secNumericValue < 150) {
-              secCellClass = 'sec-ok'; // 120 to 149
-            } else {
-              secCellClass = 'sec-good'; // 150 and over
+            let secCellClass = '';
+            if (secNumericValue !== null && typeof secNumericValue === 'number') {
+              if (secNumericValue < 120) {
+                secCellClass = 'sec-bad';
+              } else if (secNumericValue < 150) {
+                secCellClass = 'sec-ok';
+              } else {
+                secCellClass = 'sec-good';
+              }
             }
-          }
 
-          table += `<tr>
-                      <td class="legend-color-guide"><div style="background-color: ${elem.color};"></div></td>
-                      <td class="key">${elem.key}</td>
-                      <td class="value">${d3.format(',.0f')(elem.value)}</td>
-                      <td class="value ${secCellClass}">${secDisplayValue}</td>
-                    </tr>`;
+            table += `<tr>
+                        <td class="legend-color-guide"><div style="background-color: ${elem.color};"></div></td>
+                        <td class="key">${elem.key}</td>
+                        <td class="value">${d3.format(',.0f')(elem.value)}</td>
+                        <td class="value ${secCellClass}">${secDisplayValue}</td>
+                      </tr>`;
+          }
         });
 
         table += '</tbody></table>';
         return table;
       });
-      // --- End of Tooltip Customization ---
 
+      // Chart axes
       chart.xScale(d3.time.scale());
       chart.xAxis
           .axisLabel('Time')
@@ -204,6 +254,13 @@
           .datum(valueLines)
           .transition().duration(500)
           .call(chart);
+
+      // Style the legend symbol
+      chart.dispatch.on('renderEnd', function() {
+        d3.selectAll('#chart .nv-legend-symbol')
+            .filter((d) => d.isAverage)
+            .attr('r', 10);
+      });
 
       nv.utils.windowResize(chart.update);
       return chart;
