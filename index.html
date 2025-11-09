@@ -14,13 +14,16 @@
   <script src="script.js"></script>
 
 <body>
-  <input type="file" id="csv-file" name="files"/>
-  <div class="controls">
-    <label>
+  <section class="section-input">
+    <input type="file" id="csv-file" name="files"/>
+    <div class="box-controls">
       <input type="checkbox" id="group-machines-checkbox">
-      Geräte gruppieren
-    </label>
-  </div>
+      <div></div>
+      <label for="group-machines-checkbox">
+        Geräte gruppieren
+      </label>
+    </div>
+  </section>
   <div id="chart">
     <svg></svg>
   </div>

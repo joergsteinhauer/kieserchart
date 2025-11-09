@@ -1,14 +1,23 @@
 :root {
   --font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, Adwaita Sans, Cantarell, Ubuntu, roboto, noto, helvetica, arial, sans-serif;
+  --collor-success: #0f5132;
+  --collor-warning: #664d03;
+  --collor-error: #58151c;
+  --transition-duration: 0.25s;
 }
 
 :root:root {
+
+  height: 100%;
 
   /* General */
 
   body {
     font-family: var(--font-family), sans-serif;
     font-size: 1rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
 
   .nv-legend text,
@@ -18,8 +27,86 @@
 
   /* Size */
 
-  #chart svg {
-    height: 90vh;
+  #chart {
+    flex-grow: 1;
+  }
+
+  /* Data Input */
+
+  .section-input {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1em;
+    gap: 1em;
+    background: #ddd;
+
+    & input[type="file"] {
+      cursor: pointer;
+      padding: 0.5em;
+      border-radius: 99em;
+      background: #ccc;
+    }
+
+    & input[type=file]::file-selector-button {
+      cursor: pointer;
+      border-radius: 2em;
+      font-family: var(--font-family), sans-serif;
+      padding: 0.5em 1em;
+      border: none;
+      background: #555;
+      color: #fff;
+      transition: background var(--transition-duration);
+    }
+  }
+
+  .box-controls {
+    display: flex;
+    align-items: center;
+
+    & input {
+      display: none;
+
+      &:checked + div {
+        background: #37775c;
+
+        &::after {
+          left: 1.625em;
+        }
+      }
+    }
+
+    & div {
+      width: 3em;
+      height: 1.5em;
+      border-radius: 1.5em;
+      background: #999;
+      position: relative;
+      transition: background var(--transition-duration);
+
+      &::after {
+        content: '';
+        width: 1.25em;
+        transition: left var(--transition-duration);
+        height: 1.25em;
+        background: #fff;
+        border-radius: 50%;
+        position: absolute;
+        left: 0.125em;
+        top: 0.125em;
+      }
+    }
+
+    & label {
+      cursor: pointer;
+      margin-left: 0.25em;
+    }
+  }
+
+  /* Text */
+
+  .nv-noData {
+    fill: var(--collor-warning);
   }
 
   /* Data points */
@@ -30,7 +117,7 @@
     fill-opacity: 1 !important;
   }
 
-  /*** "Average" item ***/
+  /* "Average" item */
 
   .nv-group[style*="rgb(0, 0, 0)"] {
     stroke-width: 6px !important;
@@ -52,19 +139,19 @@
 
     & .sec-good {
       background-color: #d1e7dd;
-      color: #0f5132;
+      color: var(--collor-success);
       font-weight: bold;
     }
 
     & .sec-ok {
       background-color: #fff3cd;
-      color: #664d03;
+      color: var(--collor-warning);
       font-weight: bold;
     }
 
     & .sec-bad {
       background-color: #f8d7da;
-      color: #58151c;
+      color: var(--collor-error);
       font-weight: bold;
     }
   }

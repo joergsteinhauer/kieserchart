@@ -260,10 +260,9 @@
 
     nv.addGraph(function() {
       const chart = nv.models.lineChart()
-          // --- CHANGE 1: Increase the margins ---
-          // Increased 'left' from 50 to 75 to make room for the "Lbs" label.
-          // Increased 'bottom' from 50 to 60 to give the "Zeit" label more space.
-          .margin({ left: 75, right: 50, top: 50, bottom: 60 })
+          // --- FINAL CHANGE: Increase the bottom margin further ---
+          // Increased 'bottom' from 60 to 80 for more space.
+          .margin({ left: 70, right: 20, top: 50, bottom: 80 })
           .useInteractiveGuideline(true)
           .x(d => moment(d.x, dateFormat, true).toDate());
 
@@ -299,13 +298,11 @@
       chart.xAxis
           .axisLabel('Zeit')
           .tickFormat(d => d3.time.format('%d.%m.%y')(new Date(d)))
-          // --- CHANGE 2: Add padding to the tick labels ---
           .tickPadding(10); // Adds 10px of space between the axis line and the date labels.
 
       chart.yAxis
           .axisLabel('Lbs')
           .tickFormat(d3.format(',.0f'))
-          // --- CHANGE 2: Add padding to the tick labels ---
           .tickPadding(10); // Adds 10px of space between the axis line and the LBS numbers.
 
       d3.select('#chart svg').datum(valueLines).transition().duration(500).call(chart);
@@ -323,6 +320,15 @@
         d3.selectAll('#chart .nv-legend .nv-series')
             .filter(d => d.isAverage)
             .classed('average-legend-item', true);
+
+        // --- 2. Adjust X-Axis Label Position ---
+        const xAxisLabel = d3.select('#chart .nv-x .nv-axislabel');
+        if (!xAxisLabel.empty()) {
+          // Get the current Y position, which NVD3 has already calculated
+          const currentY = parseFloat(xAxisLabel.attr('y'));
+          // Set the new Y position by adding 20px to push it further down
+          xAxisLabel.attr('y', currentY + 20);
+        }
       });
       // --- END: Simplified Legend Styling Logic ---
 
