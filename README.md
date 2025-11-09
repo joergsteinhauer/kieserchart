@@ -3,20 +3,25 @@
 ## Improvement ideas
 
 - [x] make sure it works with current csv data structure
-- [ ] add "sec" to charts
-- [ ] group by type of machines (A, B...), make sure groups can be shown separately in the chart
-- [ ] use similar colors for the same machine-group (colors from the same main-color palette)
+- [x] add "sec" to charts
+- [x] add new chart line, which shows global curve (Average)
+- [x] make "lbs" on Y axe visible (is outside the box now)
+- [x] group by type of machines (A, B...)
+  - [ ] make sure groups can be shown separately in the chart
+- [x] use similar colors for the same machine-group (colors from the same main-color palette)
 - [ ] add thumb images with infos about muscles
-- [ ] make UI beautiful
+- [x] make UI beautiful
 - [ ] make it work on mobile devices
-- [ ] add some padding around the chart, so the chart lines/text are not cut off
-- [ ] make "lbs" on Y axe visible (is outside the box now)
+- [x] add some padding around the chart, so the chart lines/text are not cut off
 - [ ] add weekends to the chart (visually separation)
-- [ ] add new chart line, which shows global curve
-- [ ] remove "lbs" from charts legend, show only machine name
+- [x] remove "lbs" from charts legend, show only machine name
 - [ ] add icons for different machine groups next to the machine name (body-parts as icons)
-- [ ] add "reformat" csv feature, which:
-  - [ ] sorts machines alphabetically
-- [ ] tooltip:
-  - [ ] make it visually beautiful
-  - [ ] remove "lbs" from table
+- [ ] add arrow top/bottom to LBS in tooltip table according to previous entry
+- [x] tooltip:
+  - [x] make it visually beautiful
+  - [x] remove "lbs" from table
+
+
+## Example:
+
+https://nvd3-community.github.io/nvd3/

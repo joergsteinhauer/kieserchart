@@ -1,0 +1,216 @@
+:root {
+  --font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, Adwaita Sans, Cantarell, Ubuntu, roboto, noto, helvetica, arial, sans-serif;
+  --collor-success: #0f5132;
+  --collor-warning: #664d03;
+  --collor-error: #58151c;
+  --transition-duration: 0.25s;
+}
+
+:root:root {
+
+  height: 100%;
+
+  /* General */
+
+  body {
+    font-family: var(--font-family), sans-serif;
+    font-size: 1rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .nv-legend text,
+  .nvd3 text {
+    font: unset;
+  }
+
+  /* Size */
+
+  #chart {
+    flex-grow: 1;
+  }
+
+  /* Data Input */
+
+  .section-input {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1em;
+    gap: 1em;
+    background: #ddd;
+
+    & input[type="file"] {
+      cursor: pointer;
+      padding: 0.5em;
+      border-radius: 99em;
+      background: #ccc;
+    }
+
+    & input[type=file]::file-selector-button {
+      cursor: pointer;
+      border-radius: 2em;
+      font-family: var(--font-family), sans-serif;
+      padding: 0.5em 1em;
+      border: none;
+      background: #555;
+      color: #fff;
+      transition: background var(--transition-duration);
+    }
+  }
+
+  .box-controls {
+    display: flex;
+    align-items: center;
+
+    & label {
+      cursor: pointer;
+    }
+
+    & input {
+      display: none;
+
+      &:checked + .label-switch {
+        background: #37775c;
+
+        &::after {
+          left: 1.625em;
+        }
+      }
+    }
+
+    & .label-switch {
+      width: 3em;
+      height: 1.5em;
+      border-radius: 1.5em;
+      background: #999;
+      position: relative;
+      transition: background var(--transition-duration);
+
+      &::after {
+        content: '';
+        width: 1.25em;
+        transition: left var(--transition-duration);
+        height: 1.25em;
+        background: #fff;
+        border-radius: 50%;
+        position: absolute;
+        left: 0.125em;
+        top: 0.125em;
+      }
+    }
+
+    & .label-text {
+      margin-left: 0.25em;
+    }
+  }
+
+  /* Text */
+
+  .nv-noData {
+    fill: var(--collor-warning);
+  }
+
+  /* Data points */
+
+  .nv-point {
+    stroke-opacity: 1 !important;
+    stroke-width: 1px !important;
+    fill-opacity: 1 !important;
+  }
+
+  /* "Average" item */
+
+  .nv-group[style*="rgb(0, 0, 0)"] {
+    stroke-width: 6px !important;
+  }
+
+  .average-legend-item {
+    padding: 0 0.5em;
+
+    & text {
+      font-weight: bold;
+    }
+  }
+
+  /* Tooltip */
+
+  .nvtooltip {
+    background: hsl(0, 0%, 98%);
+    font-family: var(--font-family), sans-serif;
+    border: none;
+    box-shadow: 0 0.25em 0.5em hsl(0, 0%, 50%);
+
+    & table {
+      margin: 0.5em;
+      border-spacing: 0 0.5em;
+      border-collapse: separate;
+
+      & thead tr th {
+        border-bottom: 1px solid hsl(0, 0%, 80%);
+      }
+
+      & :is(td, th) {
+        padding: 0.5em 1em;
+        text-align: left;
+      }
+
+      & td {
+        font-weight: unset;
+
+        &.legend-color-guide div {
+          border: none;
+          border-radius: 50%;
+        }
+
+        &.value {
+          font-weight: bold;
+        }
+      }
+
+      & :not(.active-row) td {
+        &:last-child {
+          border-radius: 1em;
+        }
+      }
+
+      & .active-row {
+        background: hsl(0, 0%, 90%);
+
+        & td {
+          &:first-child {
+            border-radius: 1em 0 0 1em;
+          }
+
+          &:last-child {
+            border-radius: 0 1em 1em 0;
+          }
+        }
+      }
+
+      & .value {
+        text-align: center;
+      }
+    }
+
+    & [data-series="Durchschnitt"] {
+      font-weight: bold;
+    }
+
+    & .sec-good {
+      background-color: #d1e7dd;
+      color: var(--collor-success);
+    }
+
+    & .sec-ok {
+      background-color: #fff3cd;
+      color: var(--collor-warning);
+    }
+
+    & .sec-bad {
+      background-color: #f8d7da;
+      color: var(--collor-error);
+    }
+  }
+}
