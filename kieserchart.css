@@ -57,12 +57,11 @@
   font-weight: bold;
 }
 
-/* Style for the average line in the chart using our custom class */
-.nv-group.nv-series-0 .nv-line {
-  stroke-width: 5px !important;
+/* "Average" item */
+.nv-group[style*="rgb(0, 0, 0)"] {
+  stroke-width: 6px !important;
 }
 
-/* Target the legend item that contains our custom classed series */
-.nv-legend .nv-series.average-line-series .nv-legend-text {
+.average-legend-item text {
   font-weight: bold;
 }

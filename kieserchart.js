@@ -3,10 +3,7 @@
 
   const dateFormat = "DD.MM.YYYY";
 
-  // --- START: New Color and State Management ---
-
-  // 1. Define base colors for each machine group.
-  // These can be easily customized.
+  // --- Color and State Management ---
   const GROUP_COLORS = {
     'A': 'hsl(205, 70%, 50%)', // Blue
     'B': 'hsl(160, 70%, 45%)', // Teal/Green
@@ -16,12 +13,10 @@
     'G': 'hsl(50, 80%, 50%)',  // Yellow/Gold
     'DEFAULT': 'hsl(0, 0%, 50%)' // Grey for ungrouped
   };
-  const AVERAGE_COLOR = 'hsl(0, 0%, 10%)'; // Almost black for the Average line
+  // --- FIX: Define the average color in the same format the browser will compute it ---
+  const AVERAGE_COLOR = 'rgb(0, 0, 0)';
 
-  // 2. Store chart data globally to allow re-sorting without re-parsing.
-  let chartData = [];
-  // --- END: New Color and State Management ---
-
+  let chartData = []; // Stores the processed data in original CSV order with static colors
 
   document.addEventListener('DOMContentLoaded', function() {
     const csvFileInput = document.getElementById('csv-file');
@@ -29,7 +24,6 @@
       csvFileInput.addEventListener('change', handleFileSelect);
     }
 
-    // --- START: Checkbox Event Listener ---
     const groupCheckbox = document.getElementById('group-machines-checkbox');
     if (groupCheckbox) {
       groupCheckbox.addEventListener('change', () => {
@@ -37,7 +31,6 @@
         drawGraph(chartData, groupCheckbox.checked);
       });
     }
-    // --- END: Checkbox Event Listener ---
   });
 
   function handleFileSelect(evt) {
@@ -140,15 +133,32 @@
           return point;
         }
         return null;
-      }).filter(point => point !== null); // Remove any empty points.
+      }).filter(point => point !== null);
 
-      return {
-        key: machineBaseName, // Use the clean base name for the legend.
-        values: values
-      };
-    }).filter(line => line.values.length > 0); // Only keep lines that have data.
+      return { key: machineBaseName, values: values };
+    }).filter(line => line.values.length > 0);
 
-    // Calculate the average line
+    // --- START: Assign Static Colors ONCE (without changing 'lines' order) ---
+    // To ensure consistent color derivation, we need a stable order for calculating shades.
+    // We'll create a temporary sorted list of keys for this purpose.
+    const sortedMachineKeys = lines
+        .map(line => line.key)
+        .sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
+
+    const groupCountsForColoring = new Map();
+    const machineColorsMap = new Map(); // Stores the derived color for each machine key
+
+    // Derive colors based on the stable sorted order of keys
+    sortedMachineKeys.forEach(key => {
+      machineColorsMap.set(key, getColorForMachine(key, groupCountsForColoring));
+    });
+
+    // Now, assign the derived colors to the 'lines' array (which is still in original CSV order)
+    lines.forEach(line => {
+      line.color = machineColorsMap.get(line.key);
+    });
+    // --- END: Assign Static Colors ONCE ---
+
     const dailyTotals = new Map();
     lines.forEach(line => {
       line.values.forEach(point => {
@@ -173,19 +183,24 @@
     // Sort the average values by date to ensure the line is drawn correctly
     averageValues.sort((a, b) => moment(a.x, dateFormat).toDate() - moment(b.x, dateFormat).toDate());
 
+    let averageLine;
     if (averageValues.length > 0) {
-      const averageLine = {
+      averageLine = {
         key: 'Average',
         values: averageValues,
         isAverage: true,
         color: AVERAGE_COLOR
       };
-      // Add the average line to the beginning of the array
-      lines.unshift(averageLine);
     }
 
-    // Store the fully processed data and draw the chart for the first time.
-    chartData = lines;
+    // Store the fully processed data. 'lines' is in original CSV column order.
+    // We'll add the average line to chartData here, always at the beginning.
+    chartData = [];
+    if (averageLine) {
+      chartData.push(averageLine);
+    }
+    chartData = chartData.concat(lines); // Add all machine lines after the average line
+
     const isGrouped = document.getElementById('group-machines-checkbox')?.checked || false;
     drawGraph(chartData, isGrouped);
   }
@@ -199,9 +214,8 @@
   function getColorForMachine(key, groupCounts) {
     const group = key.charAt(0).toUpperCase();
     const baseColor = GROUP_COLORS[group] || GROUP_COLORS['DEFAULT'];
-
     const countInGroup = groupCounts.get(group) || 0;
-    groupCounts.set(group, countInGroup + 1);
+    groupCounts.set(group, countInGroup + 1); // Increment count for this group
 
     // Parse the HSL color string (e.g., "hsl(205, 70%, 50%)")
     const [hue, saturation, lightness] = baseColor.match(/\d+/g).map(Number);
@@ -211,31 +225,36 @@
       return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     }
 
-    // For subsequent machines in the same group, slightly change lightness and saturation
+    // For subsequent machines in the same group, slightly change lightness
     // This creates visually related, but distinct, colors.
+    // Alternating positive/negative shift for better distribution
     const lightnessShift = (countInGroup % 2 === 1 ? 1 : -1) * Math.ceil(countInGroup / 2) * 8;
     const newLightness = Math.max(20, Math.min(85, lightness + lightnessShift)); // Clamp between 20% and 85%
 
     return `hsl(${hue}, ${saturation}%, ${newLightness}%)`;
   }
 
-
   function drawGraph(sourceData, isGrouped) {
-    // Create a deep copy to avoid modifying the original data.
+    // Create a deep copy to avoid modifying the original chartData
     let valueLines = JSON.parse(JSON.stringify(sourceData));
 
-    // --- START: New Sorting Logic ---
+    // Separate average line from machine lines
     const averageLine = valueLines.find(d => d.isAverage);
     let machineLines = valueLines.filter(d => !d.isAverage);
 
     if (isGrouped) {
-      // Sort by machine name (A1, A3, B1, B7...)
+      // If grouping is checked, sort machine lines alphabetically
       machineLines.sort((a, b) => a.key.localeCompare(b.key, 'en', { numeric: true }));
     }
-    // If not grouped, we just use the original parsed order.
+    // If not grouped, machineLines already retains the order from sourceData (original CSV order).
 
-    valueLines = [averageLine, ...machineLines].filter(Boolean); // Re-assemble the array
-    // --- END: New Sorting Logic ---
+    // Re-assemble the final array for the chart, always with average first if it exists
+    valueLines = [];
+    if (averageLine) {
+      valueLines.push(averageLine);
+    }
+    valueLines = valueLines.concat(machineLines);
+
 
     d3.select('#chart svg').selectAll('*').remove();
 
@@ -245,13 +264,9 @@
           .useInteractiveGuideline(true)
           .x(d => moment(d.x, dateFormat, true).toDate());
 
-      // --- START: New Color Logic ---
-      const groupCounts = new Map(); // Track machine counts per group for color derivation
-      chart.color(d => {
-        if (d.isAverage) return d.color;
-        return getColorForMachine(d.key, groupCounts);
-      });
-      // --- END: New Color Logic ---
+      // --- SIMPLIFIED & ROBUST COLOR LOGIC ---
+      // Simply read the static color that was assigned during the transform step.
+      chart.color(d => d.color);
 
       // Tooltip, Axis, and other configurations remain largely the same...
       chart.interactiveLayer.tooltip.contentGenerator(function(d) {
@@ -283,40 +298,28 @@
 
       d3.select('#chart svg').datum(valueLines).transition().duration(500).call(chart);
 
-      // --- START: The Guaranteed Styling Logic ---
+      // --- START: Simplified Legend Styling Logic ---
       // This runs every time the chart is rendered or updated.
       chart.dispatch.on('renderEnd', function() {
-        let averageSeriesIndex = -1;
 
-        // Find the current index of the "Average" series in the legend.
+        // --- 1. Style the Legend Item ---
+        // First, clean up any previous state from all legend items.
         d3.selectAll('#chart .nv-legend .nv-series')
-            .each(function(d, i) {
-              if (d.isAverage) {
-                averageSeriesIndex = i;
-              }
-            });
+            .classed('average-legend-item', false);
 
-        // Clean up previous state.
-        d3.selectAll('#chart .nv-linesWrap .nv-series')
-            .classed('average-line-series', false);
+        // Then, add a specific class to the Average legend item using its reliable data flag.
+        d3.selectAll('#chart .nv-legend .nv-series')
+            .filter(d => d.isAverage)
+            .classed('average-legend-item', true);
 
-        // If the average series is visible, apply the class to the correct line.
-        if (averageSeriesIndex !== -1) {
-          d3.select('#chart .nv-linesWrap .nv-series-' + averageSeriesIndex)
-              .classed('average-line-series', true);
-        }
+        // --- 2. Style the Legend Symbols ---
+        // Make the Average legend symbol larger.
+        d3.selectAll('#chart .nv-legend .average-legend-item .nv-legend-symbol')
+            .attr('r', 7);
 
-        // Style the 'Average' legend symbol to be larger.
-        d3.selectAll('#chart .nv-legend-symbol')
-            .filter((d) => d.isAverage)
-            .attr('r', 10);
-
-        // --- NEW ---
-        // Remove the stroke from ALL legend symbols for a cleaner look.
-        d3.selectAll('#chart .nv-legend-symbol')
-            .style('stroke-width', 0);
+        // The line that removed the stroke has been deleted from here.
       });
-      // --- END: The Guaranteed Styling Logic ---
+      // --- END: Simplified Legend Styling Logic ---
 
       nv.utils.windowResize(chart.update);
       return chart;
