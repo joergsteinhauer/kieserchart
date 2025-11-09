@@ -64,10 +64,14 @@
     display: flex;
     align-items: center;
 
+    & label {
+      cursor: pointer;
+    }
+
     & input {
       display: none;
 
-      &:checked + div {
+      &:checked + .label-switch {
         background: #37775c;
 
         &::after {
@@ -76,7 +80,7 @@
       }
     }
 
-    & div {
+    & .label-switch {
       width: 3em;
       height: 1.5em;
       border-radius: 1.5em;
@@ -97,8 +101,7 @@
       }
     }
 
-    & label {
-      cursor: pointer;
+    & .label-text {
       margin-left: 0.25em;
     }
   }
@@ -134,44 +137,80 @@
   /* Tooltip */
 
   .nvtooltip {
-    background: #fff;
+    background: hsl(0, 0%, 98%);
     font-family: var(--font-family), sans-serif;
+    border: none;
+    box-shadow: 0 0.25em 0.5em hsl(0, 0%, 50%);
+
+    & table {
+      margin: 0.5em;
+      border-spacing: 0 0.5em;
+      border-collapse: separate;
+
+      & thead tr th {
+        border-bottom: 1px solid hsl(0, 0%, 80%);
+      }
+
+      & :is(td, th) {
+        padding: 0.5em 1em;
+        text-align: left;
+      }
+
+      & td {
+        font-weight: unset;
+
+        &.legend-color-guide div {
+          border: none;
+          border-radius: 50%;
+        }
+
+        &.value {
+          font-weight: bold;
+        }
+      }
+
+      & :not(.active-row) td {
+        &:last-child {
+          border-radius: 1em;
+        }
+      }
+
+      & .active-row {
+        background: hsl(0, 0%, 90%);
+
+        & td {
+          &:first-child {
+            border-radius: 1em 0 0 1em;
+          }
+
+          &:last-child {
+            border-radius: 0 1em 1em 0;
+          }
+        }
+      }
+
+      & .value {
+        text-align: center;
+      }
+    }
+
+    & [data-series="Durchschnitt"] {
+      font-weight: bold;
+    }
 
     & .sec-good {
       background-color: #d1e7dd;
       color: var(--collor-success);
-      font-weight: bold;
     }
 
     & .sec-ok {
       background-color: #fff3cd;
       color: var(--collor-warning);
-      font-weight: bold;
     }
 
     & .sec-bad {
       background-color: #f8d7da;
       color: var(--collor-error);
-      font-weight: bold;
     }
   }
-
-  .nvtooltip table :is(td, th) {
-    padding: 0.5em;
-    text-align: left;
-  }
-
-  .nvtooltip table td:not(.legend-color-guide) {
-    padding-right: 1em;
-  }
-
-  .nvtooltip table td.legend-color-guide div {
-    border: none;
-    border-radius: 50%;
-  }
 }
-
-
-
-
-

@@ -262,7 +262,7 @@
       const chart = nv.models.lineChart()
           // --- FINAL CHANGE: Increase the bottom margin further ---
           // Increased 'bottom' from 60 to 80 for more space.
-          .margin({ left: 70, right: 20, top: 50, bottom: 80 })
+          .margin({ left: 100, right: 70, top: 50, bottom: 80 })
           .useInteractiveGuideline(true)
           .x(d => moment(d.x, dateFormat, true).toDate());
 
@@ -274,12 +274,19 @@
       chart.interactiveLayer.tooltip.contentGenerator(function(d) {
         if (d === null) return '';
         const date = d3.time.format('%d.%m.%Y')(new Date(d.value));
-        let table = `<table><thead><tr><th colspan="4">${date}</th></tr><tr><th colspan="2">Machine</th><th class="value">LBS</th><th class="value">SEC.</th></tr></thead><tbody>`;
+
+        // --- IMPORTANT: NVD3 sets `elem.highlight === true` for the series closest to the mouse.
+        // We leverage that to add a CSS class to the matching table row.
+        // This works with useInteractiveGuideline(true), i.e., when hovering the chart canvas/line.
+        let table = `<table><thead><tr><th colspan="4">${date}</th></tr><tr><th colspan="2">Gerät</th><th class="value">Lbs</th><th class="value">Sek.</th></tr></thead><tbody>`;
         d.series.forEach(function(elem) {
-          if (elem.data.isAverage) {
-            table += `<tr><td class="legend-color-guide"><div style="background-color: ${elem.color};"></div></td><td class="key">${elem.key}</td><td class="value">${d3.format(',.1f')(elem.value)}</td><td class="value"></td></tr>`;
+          // Add 'active-row' if NVD3 marks this series as the current highlight
+          const highlightClass = elem.highlight ? 'active-row' : '';
+
+          if (elem.data && elem.data.isAverage) {
+            table += `<tr class="${highlightClass}" data-series="${elem.key}"><td class="legend-color-guide"><div style="background-color: ${elem.color};"></div></td><td class="key">${elem.key}</td><td class="value">${d3.format(',.1f')(elem.value)}</td><td class="value"></td></tr>`;
           } else {
-            const secNumericValue = elem.data.sec;
+            const secNumericValue = elem.data ? elem.data.sec : null;
             const secDisplayValue = (secNumericValue !== null && typeof secNumericValue === 'number') ? secNumericValue : 'N/A';
             let secCellClass = '';
             if (secNumericValue !== null && typeof secNumericValue === 'number') {
@@ -287,7 +294,7 @@
               else if (secNumericValue < 150) secCellClass = 'sec-ok';
               else secCellClass = 'sec-good';
             }
-            table += `<tr><td class="legend-color-guide"><div style="background-color: ${elem.color};"></div></td><td class="key">${elem.key}</td><td class="value">${d3.format(',.0f')(elem.value)}</td><td class="value ${secCellClass}">${secDisplayValue}</td></tr>`;
+            table += `<tr class="${highlightClass}" data-series="${elem.key}"><td class="legend-color-guide"><div style="background-color: ${elem.color};"></div></td><td class="key">${elem.key}</td><td class="value">${d3.format(',.0f')(elem.value)}</td><td class="value ${secCellClass}">${secDisplayValue}</td></tr>`;
           }
         });
         table += '</tbody></table>';

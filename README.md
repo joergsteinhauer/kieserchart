@@ -16,6 +16,12 @@
 - [ ] add weekends to the chart (visually separation)
 - [x] remove "lbs" from charts legend, show only machine name
 - [ ] add icons for different machine groups next to the machine name (body-parts as icons)
-- [ ] tooltip:
-  - [ ] make it visually beautiful
+- [ ] add arrow top/bottom to LBS in tooltip table according to previous entry
+- [x] tooltip:
+  - [x] make it visually beautiful
   - [x] remove "lbs" from table
+
+
+## Example:
+
+https://nvd3-community.github.io/nvd3/
