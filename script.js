@@ -186,7 +186,7 @@
     let averageLine;
     if (averageValues.length > 0) {
       averageLine = {
-        key: 'Average',
+        key: 'Durchschnitt',
         values: averageValues,
         isAverage: true,
         color: AVERAGE_COLOR
@@ -260,7 +260,10 @@
 
     nv.addGraph(function() {
       const chart = nv.models.lineChart()
-          .margin({ left: 50, right: 50, top: 50 })
+          // --- CHANGE 1: Increase the margins ---
+          // Increased 'left' from 50 to 75 to make room for the "Lbs" label.
+          // Increased 'bottom' from 50 to 60 to give the "Zeit" label more space.
+          .margin({ left: 75, right: 50, top: 50, bottom: 60 })
           .useInteractiveGuideline(true)
           .x(d => moment(d.x, dateFormat, true).toDate());
 
@@ -293,8 +296,17 @@
       });
 
       chart.xScale(d3.time.scale());
-      chart.xAxis.axisLabel('Time').tickFormat(d => d3.time.format('%d.%m.%y')(new Date(d)));
-      chart.yAxis.axisLabel('Lbs').tickFormat(d3.format(',.0f'));
+      chart.xAxis
+          .axisLabel('Zeit')
+          .tickFormat(d => d3.time.format('%d.%m.%y')(new Date(d)))
+          // --- CHANGE 2: Add padding to the tick labels ---
+          .tickPadding(10); // Adds 10px of space between the axis line and the date labels.
+
+      chart.yAxis
+          .axisLabel('Lbs')
+          .tickFormat(d3.format(',.0f'))
+          // --- CHANGE 2: Add padding to the tick labels ---
+          .tickPadding(10); // Adds 10px of space between the axis line and the LBS numbers.
 
       d3.select('#chart svg').datum(valueLines).transition().duration(500).call(chart);
 
