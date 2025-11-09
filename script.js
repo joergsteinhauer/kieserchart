@@ -189,7 +189,8 @@
         key: 'Durchschnitt',
         values: averageValues,
         isAverage: true,
-        color: AVERAGE_COLOR
+        color: AVERAGE_COLOR,
+        disabled: true
       };
     }
 
@@ -262,7 +263,7 @@
       const chart = nv.models.lineChart()
           // --- FINAL CHANGE: Increase the bottom margin further ---
           // Increased 'bottom' from 60 to 80 for more space.
-          .margin({ left: 100, right: 70, top: 50, bottom: 80 })
+          .margin({ left: 100, right: 70, top: 80, bottom: 80 })
           .useInteractiveGuideline(true)
           .x(d => moment(d.x, dateFormat, true).toDate());
 

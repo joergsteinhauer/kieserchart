@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="de-DE">
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="img/kieserchart.svg" type="image/svg+xml">
   <title>Kieser Chart</title>
 
   <link rel="stylesheet" href="css/normalize.css">
@@ -15,13 +17,16 @@
 
 <body>
   <section class="section-input">
-    <input type="file" id="csv-file" name="files"/>
-    <div class="box-controls">
-      <input type="checkbox" id="group-machines-checkbox">
-      <label class="label-switch" for="group-machines-checkbox"></label>
-      <label for="group-machines-checkbox" class="label-text">
-        Geräte gruppieren
-      </label>
+    <h1 class="headline-1"><img src="img/kieserchart.svg" alt="Kieser Chart" width="20" height="20" />Kieser Chart</h1>
+    <div class="box-input">
+      <input type="file" id="csv-file" name="files"/>
+      <div class="box-controls">
+        <input type="checkbox" id="group-machines-checkbox">
+        <label class="label-switch" for="group-machines-checkbox"></label>
+        <label for="group-machines-checkbox" class="label-text">
+          Geräte gruppieren
+        </label>
+      </div>
     </div>
   </section>
   <div id="chart">
