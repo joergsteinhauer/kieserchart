@@ -1,40 +1,28 @@
 <!DOCTYPE html>
 <html lang="de-DE">
-<meta charset="utf-8">
-<title>Kieser Chart</title> <!-- It's good practice to add a title -->
+  <meta charset="utf-8">
+  <title>Kieser Chart</title>
 
-<!-- 3rd party dependencies -->
-<!-- We no longer need jQuery! -->
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/style.css">
 
-<!-- PapaParse: Updated from 4.1.2 to 5.4.1 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
-<!-- Moment.js: Updated from 2.12.0 to 2.29.4. The locale file is included in the main file now. -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment-with-locales.min.js"></script>
-
-<!-- D3.js and NVD3.js -->
-<!-- The old links were for D3 v3 and a dead rawgit link. -->
-<!-- We are updating to D3 v3.5.17 and NVD3 v1.8.6 from a reliable CDN (jsDelivr). -->
-<!-- NVD3 is not compatible with newer versions of D3 (like v4+), so we stick with D3 v3. -->
-<script src="https://cdn.jsdelivr.net/npm/d3@3.5.17/d3.min.js" charset="utf-8"></script>
-<script src="https://cdn.jsdelivr.net/npm/nvd3@1.8.6/build/nv.d3.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nvd3@1.8.6/build/nv.d3.css">
-
-<!-- project -->
-<script src="kieserchart.js"></script>
-<link rel="stylesheet" href="kieserchart.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment-with-locales.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@3.5.17/d3.min.js" charset="utf-8"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nvd3@1.8.6/build/nv.d3.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nvd3@1.8.6/build/nv.d3.css">
+  <script src="script.js"></script>
 
 <body>
-<input type="file" id="csv-file" name="files"/>
-<div class="controls">
-  <label>
-    <input type="checkbox" id="group-machines-checkbox">
-    Group Machines
-  </label>
-</div>
-<div id="chart">
-  <svg></svg>
-</div>
+  <input type="file" id="csv-file" name="files"/>
+  <div class="controls">
+    <label>
+      <input type="checkbox" id="group-machines-checkbox">
+      Group Machines
+    </label>
+  </div>
+  <div id="chart">
+    <svg></svg>
+  </div>
 </body>
-
 </html>

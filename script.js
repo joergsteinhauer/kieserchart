@@ -228,7 +228,7 @@
     // For subsequent machines in the same group, slightly change lightness
     // This creates visually related, but distinct, colors.
     // Alternating positive/negative shift for better distribution
-    const lightnessShift = (countInGroup % 2 === 1 ? 1 : -1) * Math.ceil(countInGroup / 2) * 8;
+    const lightnessShift = (countInGroup % 2 === 1 ? 1 : -1) * Math.ceil(countInGroup / 2) * 10;
     const newLightness = Math.max(20, Math.min(85, lightness + lightnessShift)); // Clamp between 20% and 85%
 
     return `hsl(${hue}, ${saturation}%, ${newLightness}%)`;
@@ -311,13 +311,6 @@
         d3.selectAll('#chart .nv-legend .nv-series')
             .filter(d => d.isAverage)
             .classed('average-legend-item', true);
-
-        // --- 2. Style the Legend Symbols ---
-        // Make the Average legend symbol larger.
-        d3.selectAll('#chart .nv-legend .average-legend-item .nv-legend-symbol')
-            .attr('r', 7);
-
-        // The line that removed the stroke has been deleted from here.
       });
       // --- END: Simplified Legend Styling Logic ---
 

@@ -1,0 +1,90 @@
+:root {
+  --font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, Adwaita Sans, Cantarell, Ubuntu, roboto, noto, helvetica, arial, sans-serif;
+}
+
+:root:root {
+
+  /* General */
+
+  body {
+    font-family: var(--font-family), sans-serif;
+    font-size: 1rem;
+  }
+
+  .nv-legend text,
+  .nvd3 text {
+    font: unset;
+  }
+
+  /* Size */
+
+  #chart svg {
+    height: 90vh;
+  }
+
+  /* Data points */
+
+  .nv-point {
+    stroke-opacity: 1 !important;
+    stroke-width: 1px !important;
+    fill-opacity: 1 !important;
+  }
+
+  /*** "Average" item ***/
+
+  .nv-group[style*="rgb(0, 0, 0)"] {
+    stroke-width: 6px !important;
+  }
+
+  .average-legend-item {
+    padding: 0 0.5em;
+
+    & text {
+      font-weight: bold;
+    }
+  }
+
+  /* Tooltip */
+
+  .nvtooltip {
+    background: #fff;
+    font-family: var(--font-family), sans-serif;
+
+    & .sec-good {
+      background-color: #d1e7dd;
+      color: #0f5132;
+      font-weight: bold;
+    }
+
+    & .sec-ok {
+      background-color: #fff3cd;
+      color: #664d03;
+      font-weight: bold;
+    }
+
+    & .sec-bad {
+      background-color: #f8d7da;
+      color: #58151c;
+      font-weight: bold;
+    }
+  }
+
+  .nvtooltip table :is(td, th) {
+    padding: 0.5em;
+    text-align: left;
+  }
+
+  .nvtooltip table td:not(.legend-color-guide) {
+    padding-right: 1em;
+  }
+
+  .nvtooltip table td.legend-color-guide div {
+    border: none;
+    border-radius: 50%;
+  }
+}
+
+
+
+
+
